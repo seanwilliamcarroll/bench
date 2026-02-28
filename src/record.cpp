@@ -1,12 +1,38 @@
 #include "record.hpp"
+#include <_time.h>
 #include <iostream>
+#include <sys/resource.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <thread>
 #include <chrono>
 
+timespec subtract(timespec start_time, timespec end_time) {
+  timespec output;
+  output.tv_sec = end_time.tv_sec - start_time.tv_sec;
+  output.tv_nsec = end_time.tv_nsec - start_time.tv_nsec;
+  if (output.tv_nsec < 0) {
+    output.tv_sec -= 1;
+    output.tv_nsec += 1'000'000'000;
+  }
+  return output;
+}
 
-int fork_test() {
+void print_rusage(const struct rusage& ru) {                                                    
+  double user_ms = ru.ru_utime.tv_sec * 1000.0 + ru.ru_utime.tv_usec / 1000.0;                  
+  double sys_ms  = ru.ru_stime.tv_sec * 1000.0 + ru.ru_stime.tv_usec / 1000.0;                  
+  std::cout << "user time:                 " << user_ms    << " ms\n";                          
+  std::cout << "system time:               " << sys_ms     << " ms\n";
+  std::cout << "peak memory:               " << ru.ru_maxrss << " KB\n";
+  std::cout << "minor page faults:         " << ru.ru_minflt  << "\n";
+  std::cout << "major page faults:         " << ru.ru_majflt  << "\n";
+  std::cout << "voluntary context switches:   " << ru.ru_nvcsw  << "\n";
+  std::cout << "involuntary context switches: " << ru.ru_nivcsw << "\n";
+}
+
+int fork_exec(char* argv[]) {
+  timespec start_time;
+  clock_gettime(CLOCK_MONOTONIC, &start_time);
   pid_t pid = fork();
 
   if (pid == -1) {
@@ -14,15 +40,31 @@ int fork_test() {
     return -1;
   }
   if (pid == 0) {
-    std::cout << "I'm the child!" << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    return 0;
+    return execvp(argv[0], argv);
   }
   wait(NULL);
+  timespec end_time;
+  clock_gettime(CLOCK_MONOTONIC, &end_time);
+  auto difference = subtract(start_time, end_time); 
   std::cout << "I'm the parent who waited on " << pid << std::endl;
+  std::cout << "Waited for " << difference.tv_sec << " second(s) and "
+            << difference.tv_nsec << " nanosecond(s)" << std::endl;
+
+  rusage child_stats;
+  int ret = getrusage(RUSAGE_CHILDREN, &child_stats);
+  if (ret) {
+    std::cerr << "Failed to call getrusage!" << std::endl;
+    return ret;
+  }
+  print_rusage(child_stats);
+  
   return 0;
 }
 
-int cmd_record(int argc, char* argv[]) {
-  return fork_test();
+int cmd_record(int argc, char *argv[]) {
+  if (argc < 1) {
+    std::cerr << "Must pass a command to record!" << std::endl;
+    return -1;
+  }
+  return fork_exec(argv);
 }
