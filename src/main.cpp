@@ -2,12 +2,12 @@
 #include <iostream>
 #include <string_view>
 
-static int cmd_report(int argc, char* argv[]) {
+static int cmd_report(int argc, char *argv[]) {
   std::cerr << "UNIMPLEMENTED: report\n";
   return 1;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: bench <command> [args...]\n";
     std::cerr << "Commands: record, report\n";

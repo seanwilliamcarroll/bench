@@ -1,0 +1,17 @@
+#!/bin/bash
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|hpp|h|c|cc|cxx)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+if ! command -v clang-format &> /dev/null; then
+    echo "Warning: clang-format not found, skipping formatting"
+    exit 0
+fi
+
+for FILE in $STAGED_FILES; do
+    clang-format -i "$FILE"
+    git add "$FILE"
+done

@@ -1,11 +1,11 @@
 #include "record.hpp"
 #include <_time.h>
+#include <chrono>
 #include <iostream>
 #include <sys/resource.h>
-#include <unistd.h>
 #include <sys/wait.h>
 #include <thread>
-#include <chrono>
+#include <unistd.h>
 
 timespec subtract(timespec start_time, timespec end_time) {
   timespec output;
@@ -18,19 +18,19 @@ timespec subtract(timespec start_time, timespec end_time) {
   return output;
 }
 
-void print_rusage(const struct rusage& ru) {                                                    
-  double user_ms = ru.ru_utime.tv_sec * 1000.0 + ru.ru_utime.tv_usec / 1000.0;                  
-  double sys_ms  = ru.ru_stime.tv_sec * 1000.0 + ru.ru_stime.tv_usec / 1000.0;                  
-  std::cout << "user time:                 " << user_ms    << " ms\n";                          
-  std::cout << "system time:               " << sys_ms     << " ms\n";
+void print_rusage(const struct rusage &ru) {
+  double user_ms = ru.ru_utime.tv_sec * 1000.0 + ru.ru_utime.tv_usec / 1000.0;
+  double sys_ms = ru.ru_stime.tv_sec * 1000.0 + ru.ru_stime.tv_usec / 1000.0;
+  std::cout << "user time:                 " << user_ms << " ms\n";
+  std::cout << "system time:               " << sys_ms << " ms\n";
   std::cout << "peak memory:               " << ru.ru_maxrss << " KB\n";
-  std::cout << "minor page faults:         " << ru.ru_minflt  << "\n";
-  std::cout << "major page faults:         " << ru.ru_majflt  << "\n";
-  std::cout << "voluntary context switches:   " << ru.ru_nvcsw  << "\n";
+  std::cout << "minor page faults:         " << ru.ru_minflt << "\n";
+  std::cout << "major page faults:         " << ru.ru_majflt << "\n";
+  std::cout << "voluntary context switches:   " << ru.ru_nvcsw << "\n";
   std::cout << "involuntary context switches: " << ru.ru_nivcsw << "\n";
 }
 
-int fork_exec(char* argv[]) {
+int fork_exec(char *argv[]) {
   timespec start_time;
   clock_gettime(CLOCK_MONOTONIC, &start_time);
   pid_t pid = fork();
@@ -45,7 +45,7 @@ int fork_exec(char* argv[]) {
   wait(NULL);
   timespec end_time;
   clock_gettime(CLOCK_MONOTONIC, &end_time);
-  auto difference = subtract(start_time, end_time); 
+  auto difference = subtract(start_time, end_time);
   std::cout << "I'm the parent who waited on " << pid << std::endl;
   std::cout << "Waited for " << difference.tv_sec << " second(s) and "
             << difference.tv_nsec << " nanosecond(s)" << std::endl;
@@ -57,7 +57,7 @@ int fork_exec(char* argv[]) {
     return ret;
   }
   print_rusage(child_stats);
-  
+
   return 0;
 }
 
