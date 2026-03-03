@@ -5,6 +5,7 @@
 #include <sstream>
 
 std::vector<MappedRegion> read_maps(pid_t pid) {
+  // Perhaps a bit messy right now, but good enough
 
   const std::string maps_path = "/proc/" + std::to_string(pid) + "/maps";
 
@@ -14,34 +15,34 @@ std::vector<MappedRegion> read_maps(pid_t pid) {
 
   std::string line;
   while (std::getline(maps_file, line)) {
-    // std::cout << line << std::endl;
     std::istringstream iss(line);
+
     uint64_t start;
     uint64_t end;
     char dash;
-
     iss >> std::hex >> start >> dash >> end;
-    // std::cout << "[0x" << std::hex << start << ", " << end << "]" <<
-    // std::endl;
+
     std::string section;
     std::getline(iss >> std::ws, section, ' ');
     if (section.find('x') == std::string::npos) {
       continue;
     }
+
     uint64_t offset;
     iss >> std::hex >> offset;
+
     // Don't care about dev
     std::getline(iss >> std::ws, section, ' ');
+
     // Don't care about inode
     std::getline(iss >> std::ws, section, ' ');
+
     std::string path;
     std::getline(iss >> std::ws, path);
-
     if (path.empty()) {
       // Anonymous
       continue;
     }
-
     if (path[0] == '[') {
       // Special
       continue;
