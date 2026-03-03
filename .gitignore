@@ -1,2 +1,4 @@
 build/
 sync.sh
+mac_to_vm.sh
+vm_to_mac.sh

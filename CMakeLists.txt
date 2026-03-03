@@ -5,4 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(bench src/main.cpp src/record.cpp)
+add_executable(bench
+    src/main.cpp
+    src/record.cpp
+    src/utils.cpp
+    src/symbols.cpp
+)
