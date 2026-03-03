@@ -63,6 +63,7 @@ int fork_exec(char *argv[]) {
   waitpid(pid, &status, 0);
 
   Profile profile;
+  auto maps = read_maps(pid);
 
   while (true) {
     ptrace(PTRACE_CONT, pid, 0, 0);
