@@ -25,12 +25,28 @@ using CallStack = std::vector<Frame>;
 
 struct Sample {
   CallStack frames;
+
+  void print() const {
+    int frame_index = 0;
+    for (const auto &frame : frames) {
+      std::cout << "Frame: " << frame_index++ << std::endl;
+      std::cout << "\t" << std::hex << frame.address << std::dec << std::endl;
+    }
+  }
 };
 
 using Samples = std::vector<Sample>;
 
 struct Profile {
   Samples samples;
+
+  void print() const {
+    int index = 0;
+    for (const auto &sample : samples) {
+      std::cout << "Sample: " << index++ << std::endl;
+      sample.print();
+    }
+  }
 };
 
 timespec subtract(timespec start_time, timespec end_time) {
@@ -77,8 +93,12 @@ CallStack record_frames(pid_t pid) {
     if (errno) {
       break;
     }
+    errno = 0;
     uint64_t prev_frame_pointer =
         ptrace(PTRACE_PEEKDATA, pid, (void *)frame_pointer, 0);
+    if (errno) {
+      break;
+    }
     frame_pointer = prev_frame_pointer;
   }
   return frames;
@@ -114,7 +134,6 @@ int fork_exec(char *argv[]) {
     }
     waitpid(pid, &status, 0);
     if (WIFEXITED(status)) {
-      std::cout << "Exited" << std::endl;
       break;
     } else if (WIFSTOPPED(status)) {
       profile.samples.push_back({record_frames(pid)});
@@ -139,16 +158,8 @@ int fork_exec(char *argv[]) {
   }
   print_rusage(child_stats);
 
-  int index = 0;
-  for (const auto &sample : profile.samples) {
-    std::cout << "Sample: " << index++ << std::endl;
-
-    int frame_index = 0;
-    for (const auto &frame : sample.frames) {
-      std::cout << "Frame: " << frame_index++ << std::endl;
-      std::cout << "\t" << std::hex << frame.address << std::dec << std::endl;
-    }
-  }
+  std::cout << "Recorded " << profile.samples.size() << " sample(s)"
+            << std::endl;
 
   return 0;
 }
