@@ -41,6 +41,36 @@ void wait_n_msec(int n) {
   nanosleep(&interval, nullptr);
 }
 
+void print_frames(pid_t pid) {
+  user_pt_regs regs;
+  iovec iov = {&regs, sizeof(regs)};
+  ptrace(PTRACE_GETREGSET, pid, (void *)NT_PRSTATUS, &iov);
+
+  auto fp = regs.regs[29];
+  std::cout << "==============================================================="
+               "================="
+            << std::endl;
+  while (fp != 0) {
+    uint64_t ret_addr = ptrace(PTRACE_PEEKDATA, pid, (void *)(fp + 8), 0);
+    uint64_t prev_fp = ptrace(PTRACE_PEEKDATA, pid, (void *)fp, 0);
+    std::cout << "-------------------------------------------------------------"
+                 "-------------------"
+              << std::endl;
+    std::cout << "Current FP      : " << std::hex << fp << std::endl;
+    std::cout << "Current RET_ADDR: " << std::hex << ret_addr << std::endl
+              << std::dec;
+    std::cout << "-------------------------------------------------------------"
+                 "-------------------"
+              << std::endl;
+
+    fp = prev_fp;
+  }
+  std::cout << "==============================================================="
+               "================="
+            << std::endl
+            << std::endl;
+}
+
 int fork_exec(char *argv[]) {
   timespec start_time;
   clock_gettime(CLOCK_MONOTONIC, &start_time);
@@ -72,10 +102,7 @@ int fork_exec(char *argv[]) {
       std::cout << "Exited" << std::endl;
       break;
     } else if (WIFSTOPPED(status)) {
-      user_pt_regs regs;
-      iovec iov = {&regs, sizeof(regs)};
-      ptrace(PTRACE_GETREGSET, pid, (void *)NT_PRSTATUS, &iov);
-      std::cout << "Did reg read!" << std::endl;
+      print_frames(pid);
     } else {
       std::cout << "Can this happen?" << std::endl;
       break;
