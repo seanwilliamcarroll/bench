@@ -81,14 +81,16 @@ Symbol SymbolTable::get_symbol(uint64_t addr) {
 Symbol SymbolTable::lookup_symbol(uint64_t addr) {
   // std::cout << "Lookup symbol for 0x" << std::hex << addr << std::dec <<
   // std::endl;
-  // FIXME: Inefficient for the moment, we'll return to this
+  // FIXME: Re-reads maps on every lookup — inefficient. Could cache and
+  //        invalidate only when an address falls outside all known regions.
   regions = read_maps(pid);
   // Find correct region
   const auto &region = lookup_region(addr);
 
   const auto &path = region.path;
 
-  // mmap correct elf file
+  // FIXME: Re-opens and mmaps the ELF file on every lookup. Should cache the
+  //        parsed symbol table per file path in an unordered_map<string, ...>.
   int file_descriptor = open(path.c_str(), O_RDONLY);
   struct stat buf;
   fstat(file_descriptor, &buf);
