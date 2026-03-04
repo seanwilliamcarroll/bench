@@ -26,7 +26,10 @@ CallStack record_frames(pid_t pid) {
   frames.push_back({regs.pc});
   uint64_t return_address = regs.regs[LINK_REGISTER];
   auto frame_pointer = regs.regs[FRAME_POINTER_REGISTER];
-  while (frame_pointer != 0) {
+  auto is_valid_address = [](uint64_t address) {
+    return address != 0 && address < 0x0001000000000000ULL;
+  };
+  while (is_valid_address(frame_pointer) && is_valid_address(return_address)) {
     frames.push_back({return_address - 4});
     errno = 0;
     return_address =
@@ -63,7 +66,7 @@ int fork_exec(char *argv[]) {
   waitpid(pid, &status, 0);
 
   Profile profile;
-  auto maps = read_maps(pid);
+  auto symbol_table = SymbolTable(pid);
 
   while (true) {
     ptrace(PTRACE_CONT, pid, 0, 0);
@@ -76,6 +79,10 @@ int fork_exec(char *argv[]) {
       break;
     } else if (WIFSTOPPED(status)) {
       profile.samples.push_back({record_frames(pid)});
+      for (const auto &frame : profile.samples.back().frames) {
+        std::cout << symbol_table.get_symbol(frame.address).name << std::endl;
+      }
+      std::cout << std::endl;
     } else {
       break;
     }
@@ -93,6 +100,15 @@ int fork_exec(char *argv[]) {
   }
 
   std::cout << "Recorded " << profile.samples.size() << " sample(s)\n";
+
+  // for (const auto &sample : profile.samples) {
+  //   for (const auto &frame : sample.frames) {
+  //     std::cout << "Lookup symbol for: 0x" << std::hex << frame.address <<
+  //     std::dec
+  //               << std::endl;
+  //     symbol_table.get_symbol(frame.address);
+  //   }
+  // }
 
   return 0;
 }
