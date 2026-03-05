@@ -1,10 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <iostream>
+#include <string>
 #include <vector>
 
 struct Frame {
   uint64_t address;
+  std::string name;
 };
 
 using CallStack = std::vector<Frame>;
@@ -25,6 +27,9 @@ using Samples = std::vector<Sample>;
 
 struct Profile {
   Samples samples;
+
+  void write(const std::string &path) const;
+  static Profile read(const std::string &path);
 
   void print() const {
     int index = 0;

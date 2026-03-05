@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(bench
     src/main.cpp
+    src/profile.cpp
     src/record.cpp
     src/utils.cpp
     src/symbols.cpp
