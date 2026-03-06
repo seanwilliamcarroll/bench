@@ -9,6 +9,7 @@ add_executable(bench
     src/main.cpp
     src/profile.cpp
     src/record.cpp
+    src/report.cpp
     src/utils.cpp
     src/symbols.cpp
 )

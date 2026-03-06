@@ -1,11 +1,7 @@
 #include "record.hpp"
+#include "report.hpp"
 #include <iostream>
 #include <string_view>
-
-static int cmd_report(int argc, char *argv[]) {
-  std::cerr << "UNIMPLEMENTED: report\n";
-  return 1;
-}
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {

@@ -79,10 +79,9 @@ int fork_exec(char *argv[]) {
       break;
     } else if (WIFSTOPPED(status)) {
       profile.samples.push_back({record_frames(pid)});
-      for (const auto &frame : profile.samples.back().frames) {
-        std::cout << symbol_table.get_symbol(frame.address).name << std::endl;
+      for (auto &frame : profile.samples.back().frames) {
+        frame.name = symbol_table.get_symbol(frame.address).name;        
       }
-      std::cout << std::endl;
     } else {
       break;
     }
@@ -101,15 +100,8 @@ int fork_exec(char *argv[]) {
 
   std::cout << "Recorded " << profile.samples.size() << " sample(s)\n";
 
-  // for (const auto &sample : profile.samples) {
-  //   for (const auto &frame : sample.frames) {
-  //     std::cout << "Lookup symbol for: 0x" << std::hex << frame.address <<
-  //     std::dec
-  //               << std::endl;
-  //     symbol_table.get_symbol(frame.address);
-  //   }
-  // }
-
+  profile.write("bench.out");
+  
   return 0;
 }
 
