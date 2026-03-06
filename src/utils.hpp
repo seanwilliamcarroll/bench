@@ -1,6 +1,6 @@
 #pragma once
 #include <algorithm>
-#include <optional>
+#include <cassert>
 #include <sys/resource.h>
 #include <time.h>
 #include <vector>
@@ -27,22 +27,22 @@ public:
     data.insert(iter, {start, end, value});
   }
 
-  std::optional<ValueType> lookup(KeyType key) const {
+  ValueType *lookup(KeyType key) {
     auto iter = std::upper_bound(data.begin(), data.end(), key,
                                  [](KeyType key_instance, const Entry &entry) {
                                    return key_instance < entry.start;
                                  });
     // Should return an iterator pointing to one entry past the one we want
     if (iter == data.begin()) {
-      return std::nullopt;
+      return nullptr;
     }
     // Step back an entry
     iter--;
-    const auto &entry = *iter;
+    auto &entry = *iter;
     if (entry.contains(key)) {
-      return entry.value;
+      return &entry.value;
     }
-    return std::nullopt;
+    return nullptr;
   }
 };
 

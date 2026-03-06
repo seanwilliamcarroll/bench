@@ -66,28 +66,7 @@ std::vector<MappedRegion> read_maps(pid_t pid) {
   return output;
 }
 
-Symbol SymbolTable::get_symbol(uint64_t addr) {
-  auto iter = symbols.find(addr);
-  if (iter != symbols.end()) {
-    return iter->second;
-  }
-  // Need to look it up from scratch
-  auto output = lookup_symbol(addr);
-  symbols[addr] = output;
-  return output;
-}
-
-Symbol SymbolTable::lookup_symbol(uint64_t addr) {
-  // Check if we've seen this region before
-
-  // FIXME: Re-reads maps on every lookup — inefficient. Could cache and
-  //        invalidate only when an address falls outside all known regions.
-  regions = read_maps(pid);
-  // Find correct region
-  const auto &region = lookup_region(addr);
-
-  const auto &path = region.path;
-
+std::vector<Symbol> MappedRegion::load_symbols() {
   // FIXME: Re-opens and mmaps the ELF file on every lookup. Should cache the
   //        parsed symbol table per file path in an unordered_map<string, ...>.
   int file_descriptor = open(path.c_str(), O_RDONLY);
@@ -98,14 +77,9 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
       mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
   Elf64_Ehdr *elf_header = static_cast<Elf64_Ehdr *>(base_addr);
 
-  uint64_t file_address =
-      (elf_header->e_type == ET_EXEC) ? addr : addr - region.load_bias;
-
   // Find symbol table and load it up
   Elf64_Shdr *sections =
       (Elf64_Shdr *)((uint8_t *)base_addr + elf_header->e_shoff);
-
-  Symbol output{0, 0, "<no symbol found>"};
 
   Elf64_Shdr *symbol_table_section = nullptr;
   for (int section_index = 0; section_index < elf_header->e_shnum;
@@ -124,6 +98,8 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
   const char *string_table =
       (const char *)base_addr + string_table_section->sh_offset;
 
+  std::vector<Symbol> output;
+
   Elf64_Sym *symbols =
       (Elf64_Sym *)((uint8_t *)base_addr + symbol_table_section->sh_offset);
   int symbol_count =
@@ -138,27 +114,41 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
     uint64_t function_start_addr = symbols[symbol_index].st_value;
     uint64_t function_end_addr =
         function_start_addr + symbols[symbol_index].st_size;
-    if (file_address >= function_start_addr &&
-        file_address < function_end_addr) {
-      output.start = function_start_addr;
-      output.size = symbols[symbol_index].st_size;
-      output.name = (string_table + symbols[symbol_index].st_name);
-      break;
-    }
+    uint64_t possible_load_bias = elf_header->e_type == ET_DYN ? load_bias : 0;
+    output.push_back({.start = function_start_addr + possible_load_bias,
+                      .size = symbols[symbol_index].st_size,
+                      .name = (string_table + symbols[symbol_index].st_name)});
   }
 
   munmap(base_addr, file_size);
   close(file_descriptor);
+
   return output;
 }
 
-const MappedRegion &SymbolTable::lookup_region(uint64_t addr) const {
-  // FIXME: Not efficient, but whatever, can always be optimized
-  for (const auto &mapped_region : regions) {
-    if (mapped_region.contains_addr(addr)) {
-      return mapped_region;
+MappedRegion *SymbolTable::lookup_region(uint64_t addr) {
+  auto maybe_region = regions.lookup(addr);
+  if (maybe_region != nullptr) {
+    return maybe_region;
+  }
+  auto maps = read_maps(pid);
+  for (auto &map : maps) {
+    if (regions.lookup(map.start) == nullptr) {
+      std::cout << "Add mapped region: ";
+      map.print();
+      regions.insert(map.start, map.end, std::move(map));
     }
   }
-  assert(false && "Shouldn't get here!");
-  return regions.front();
+  maps.clear();
+  return regions.lookup(addr);
+}
+
+Symbol SymbolTable::lookup_symbol(uint64_t addr) {
+  // Check if we've seen this region before
+  auto maybe_region = lookup_region(addr);
+  if (maybe_region == nullptr) {
+    return Symbol::null(addr);
+  }
+  auto &region = *maybe_region;
+  return region.lookup_symbol(addr);
 }

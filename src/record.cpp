@@ -87,7 +87,7 @@ int fork_exec(const RecordConfig &config) {
     } else if (WIFSTOPPED(status)) {
       profile.samples.push_back({record_frames(pid)});
       for (auto &frame : profile.samples.back().frames) {
-        frame.name = symbol_table.get_symbol(frame.address).name;        
+        frame.name = symbol_table.lookup_symbol(frame.address).name;
       }
     } else {
       break;
@@ -108,7 +108,7 @@ int fork_exec(const RecordConfig &config) {
   std::cout << "Recorded " << profile.samples.size() << " sample(s)\n";
 
   profile.write(config.output_path);
-  
+
   return 0;
 }
 
