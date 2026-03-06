@@ -1,9 +1,11 @@
 #pragma once
 #include <string>
+#include <vector>
 
 struct RecordConfig {
   std::string output_path = "bench.out";
   int interval_ms = 10;
+  std::vector<std::string> command;
 };
 
 struct ReportConfig {

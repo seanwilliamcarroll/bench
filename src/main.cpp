@@ -13,9 +13,9 @@ int main(int argc, char *argv[]) {
   std::string_view command = argv[1];
 
   if (command == "record") {
-    return cmd_record(argc - 2, argv + 2);
+    return cmd_record(argc - 1, argv + 1);
   } else if (command == "report") {
-    return cmd_report(argc - 2, argv + 2);
+    return cmd_report(argc - 1, argv + 1);
   } else {
     std::cerr << "Unknown command: " << command << "\n";
     std::cerr << "Commands: record, report\n";

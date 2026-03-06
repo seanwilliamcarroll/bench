@@ -47,7 +47,13 @@ CallStack record_frames(pid_t pid) {
   return frames;
 }
 
-int fork_exec(char *argv[], const RecordConfig &config) {
+int fork_exec(const RecordConfig &config) {
+  std::vector<char *> argv;
+  for (const auto &s : config.command) {
+    argv.push_back(const_cast<char *>(s.c_str()));
+  }
+  argv.push_back(nullptr);
+
   timespec start_time;
   clock_gettime(CLOCK_MONOTONIC, &start_time);
   pid_t pid = fork();
@@ -58,7 +64,7 @@ int fork_exec(char *argv[], const RecordConfig &config) {
   }
   if (pid == 0) {
     ptrace(PTRACE_TRACEME, 0, 0, 0);
-    return execvp(argv[0], argv);
+    return execvp(argv[0], argv.data());
   }
 
   std::cout << "Parent of pid: " << pid << "\n";
@@ -108,9 +114,5 @@ int fork_exec(char *argv[], const RecordConfig &config) {
 
 int cmd_record(int argc, char *argv[]) {
   RecordConfig config = parse_record_args(argc, argv);
-  if (optind >= argc) {
-    std::cerr << "Must pass a command to record!\n";
-    return -1;
-  }
-  return fork_exec(argv + optind, config);
+  return fork_exec(config);
 }

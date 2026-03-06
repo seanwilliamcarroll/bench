@@ -19,6 +19,13 @@ RecordConfig parse_record_args(int argc, char *argv[]) {
       std::exit(1);
     }
   }
+  if (optind >= argc) {
+    std::cerr << "Must pass a command to record!\n";
+    std::exit(1);
+  }
+  for (int i = optind; i < argc; ++i) {
+    config.command.push_back(argv[i]);
+  }
   return config;
 }
 
