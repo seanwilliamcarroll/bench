@@ -67,8 +67,6 @@ std::vector<MappedRegion> read_maps(pid_t pid) {
 }
 
 std::vector<Symbol> MappedRegion::load_symbols() {
-  // FIXME: Re-opens and mmaps the ELF file on every lookup. Should cache the
-  //        parsed symbol table per file path in an unordered_map<string, ...>.
   int file_descriptor = open(path.c_str(), O_RDONLY);
   struct stat buf;
   fstat(file_descriptor, &buf);
