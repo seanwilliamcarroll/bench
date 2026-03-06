@@ -1,6 +1,50 @@
 #pragma once
+#include <algorithm>
+#include <optional>
 #include <sys/resource.h>
 #include <time.h>
+#include <vector>
+
+template <typename KeyType, typename ValueType> struct RangeMap {
+private:
+  struct Entry {
+    KeyType start;
+    KeyType end;
+    ValueType value;
+
+    bool contains(KeyType key) const { return start <= key && key < end; }
+  };
+
+  std::vector<Entry> data;
+
+public:
+  void insert(KeyType start, KeyType end, ValueType value) {
+    assert(end > start && "Can't accept invalid range");
+
+    auto iter = std::lower_bound(
+        data.begin(), data.end(), start,
+        [](const Entry &entry, KeyType key) { return entry.start < key; });
+    data.insert(iter, {start, end, value});
+  }
+
+  std::optional<ValueType> lookup(KeyType key) const {
+    auto iter = std::upper_bound(data.begin(), data.end(), key,
+                                 [](KeyType key_instance, const Entry &entry) {
+                                   return key_instance < entry.start;
+                                 });
+    // Should return an iterator pointing to one entry past the one we want
+    if (iter == data.begin()) {
+      return std::nullopt;
+    }
+    // Step back an entry
+    iter--;
+    const auto &entry = *iter;
+    if (entry.contains(key)) {
+      return entry.value;
+    }
+    return std::nullopt;
+  }
+};
 
 timespec subtract(timespec start_time, timespec end_time);
 void print_rusage(const struct rusage &ru);

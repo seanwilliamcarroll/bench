@@ -1,4 +1,6 @@
 #pragma once
+#include "utils.hpp"
+#include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <sched.h>
@@ -6,11 +8,18 @@
 #include <unordered_map>
 #include <vector>
 
+struct Symbol {
+  uint64_t start;
+  uint64_t size;
+  std::string name;
+};
+
 struct MappedRegion {
   uint64_t start;
   uint64_t end;
   uint64_t load_bias;
   std::string path;
+  RangeMap<uint64_t, Symbol> cached_symbols;
 
   void print() const {
     std::cout << "[0x" << std::hex << start << ", 0x" << end << "]"
@@ -20,12 +29,6 @@ struct MappedRegion {
   uint64_t contains_addr(uint64_t addr) const {
     return end > addr && start <= addr;
   }
-};
-
-struct Symbol {
-  uint64_t start;
-  uint64_t size;
-  std::string name;
 };
 
 struct SymbolTable {
