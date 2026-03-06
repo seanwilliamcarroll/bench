@@ -1,5 +1,4 @@
 #include "symbols.hpp"
-#include <cassert>
 #include <cstdint>
 #include <elf.h>
 #include <fcntl.h>
@@ -79,8 +78,8 @@ Symbol SymbolTable::get_symbol(uint64_t addr) {
 }
 
 Symbol SymbolTable::lookup_symbol(uint64_t addr) {
-  // std::cout << "Lookup symbol for 0x" << std::hex << addr << std::dec <<
-  // std::endl;
+  // Check if we've seen this region before
+
   // FIXME: Re-reads maps on every lookup — inefficient. Could cache and
   //        invalidate only when an address falls outside all known regions.
   regions = read_maps(pid);
@@ -99,20 +98,12 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
       mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, file_descriptor, 0);
   Elf64_Ehdr *elf_header = static_cast<Elf64_Ehdr *>(base_addr);
 
-  // std::cout << "Open file: " << path << " of size " << file_size <<
-  // std::endl;
-
   uint64_t file_address =
       (elf_header->e_type == ET_EXEC) ? addr : addr - region.load_bias;
-
-  // std::cout << std::hex << "Looking for 0x" << file_address << std::dec <<
-  // std::endl;
 
   // Find symbol table and load it up
   Elf64_Shdr *sections =
       (Elf64_Shdr *)((uint8_t *)base_addr + elf_header->e_shoff);
-
-  // std::cout << "Found " << elf_header->e_shnum << " sections" << std::endl;
 
   Symbol output{0, 0, "<no symbol found>"};
 
@@ -125,7 +116,6 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
     }
     if (symbol_table_section == nullptr &&
         sections[section_index].sh_type == SHT_DYNSYM) {
-      // std::cout << "Found symbol table" << std::endl;
       // This is the correct section for symbols
       symbol_table_section = &sections[section_index];
     }
@@ -138,7 +128,6 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
       (Elf64_Sym *)((uint8_t *)base_addr + symbol_table_section->sh_offset);
   int symbol_count =
       symbol_table_section->sh_size / symbol_table_section->sh_entsize;
-  // std::cout << "Found " << symbol_count << " symbols" << std::endl;
   for (int symbol_index = 0; symbol_index < symbol_count; ++symbol_index) {
     if (ELF64_ST_TYPE(symbols[symbol_index].st_info) != STT_FUNC) {
       continue;
@@ -149,15 +138,8 @@ Symbol SymbolTable::lookup_symbol(uint64_t addr) {
     uint64_t function_start_addr = symbols[symbol_index].st_value;
     uint64_t function_end_addr =
         function_start_addr + symbols[symbol_index].st_size;
-    // std::cout << std::hex << "[0x" << function_start_addr << ", 0x" <<
-    // function_end_addr << "]: " << (string_table +
-    // symbols[symbol_index].st_name)
-    //           << std::dec<<std::endl;
     if (file_address >= function_start_addr &&
         file_address < function_end_addr) {
-      // std::cout << "Matched to function: "
-      //           << (string_table + symbols[symbol_index].st_name)
-      //           << std::endl;
       output.start = function_start_addr;
       output.size = symbols[symbol_index].st_size;
       output.name = (string_table + symbols[symbol_index].st_name);
