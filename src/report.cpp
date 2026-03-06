@@ -1,4 +1,5 @@
 #include "report.hpp"
+#include "config.hpp"
 #include "profile.hpp"
 #include <algorithm>
 #include <iomanip>
@@ -7,10 +8,11 @@
 #include <vector>
 
 int cmd_report(int argc, char *argv[]) {
-  Profile profile = Profile::read("bench.out");
+  ReportConfig config = parse_report_args(argc, argv);
+  Profile profile = Profile::read(config.input_path);
 
   if (profile.samples.empty()) {
-    std::cerr << "No samples found in bench.out\n";
+    std::cerr << "No samples found in " << config.input_path << "\n";
     return 1;
   }
 

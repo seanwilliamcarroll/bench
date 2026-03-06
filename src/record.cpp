@@ -1,4 +1,5 @@
 #include "record.hpp"
+#include "config.hpp"
 #include "profile.hpp"
 #include "symbols.hpp"
 #include "utils.hpp"
@@ -46,7 +47,7 @@ CallStack record_frames(pid_t pid) {
   return frames;
 }
 
-int fork_exec(char *argv[]) {
+int fork_exec(char *argv[], const RecordConfig &config) {
   timespec start_time;
   clock_gettime(CLOCK_MONOTONIC, &start_time);
   pid_t pid = fork();
@@ -70,7 +71,7 @@ int fork_exec(char *argv[]) {
 
   while (true) {
     ptrace(PTRACE_CONT, pid, 0, 0);
-    wait_n_msec(10);
+    wait_n_msec(config.interval_ms);
     if (kill(pid, SIGSTOP) < 0) {
       break;
     }
@@ -100,15 +101,16 @@ int fork_exec(char *argv[]) {
 
   std::cout << "Recorded " << profile.samples.size() << " sample(s)\n";
 
-  profile.write("bench.out");
+  profile.write(config.output_path);
   
   return 0;
 }
 
 int cmd_record(int argc, char *argv[]) {
-  if (argc < 1) {
+  RecordConfig config = parse_record_args(argc, argv);
+  if (optind >= argc) {
     std::cerr << "Must pass a command to record!\n";
     return -1;
   }
-  return fork_exec(argv);
+  return fork_exec(argv + optind, config);
 }
