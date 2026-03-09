@@ -72,8 +72,7 @@ int fork_exec(const RecordConfig &config) {
   int status;
   waitpid(pid, &status, 0);
 
-  Profile profile;
-  auto symbol_table = SymbolTable(pid);
+  Profile profile(pid);
 
   while (true) {
     ptrace(PTRACE_CONT, pid, 0, 0);
@@ -85,10 +84,7 @@ int fork_exec(const RecordConfig &config) {
     if (WIFEXITED(status)) {
       break;
     } else if (WIFSTOPPED(status)) {
-      profile.samples.push_back({record_frames(pid)});
-      for (auto &frame : profile.samples.back().frames) {
-        frame.name = symbol_table.lookup_symbol(frame.address).name;
-      }
+      profile.sample(pid, record_frames(pid));
     } else {
       break;
     }
@@ -105,7 +101,7 @@ int fork_exec(const RecordConfig &config) {
     print_rusage(child_stats);
   }
 
-  std::cout << "Recorded " << profile.samples.size() << " sample(s)\n";
+  std::cout << "Recorded " << profile.total_samples << " sample(s)\n";
 
   profile.write(config.output_path);
 
