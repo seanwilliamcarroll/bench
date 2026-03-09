@@ -20,6 +20,9 @@
 constexpr uint64_t FRAME_POINTER_REGISTER = 29;
 constexpr uint64_t LINK_REGISTER = 30;
 
+static volatile sig_atomic_t interrupted = 0;
+static void handle_sigint(int) { interrupted = 1; }
+
 CallStack record_frames(pid_t tid) {
   CallStack frames;
   user_pt_regs regs;
@@ -69,6 +72,7 @@ int fork_exec(const RecordConfig &config) {
   }
 
   std::cout << "Parent of pid: " << pid << "\n";
+  signal(SIGINT, handle_sigint);
 
   int status;
   waitpid(pid, &status, 0);
@@ -83,6 +87,10 @@ int fork_exec(const RecordConfig &config) {
       ptrace(PTRACE_CONT, tid, 0, 0);
     }
     wait_n_msec(config.interval_ms);
+    if (interrupted) {
+      kill(pid, SIGKILL);
+      break;
+    }
     if (kill(pid, SIGSTOP) < 0) {
       break;
     }
