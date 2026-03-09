@@ -7,8 +7,11 @@
 
 void Profile::write(const std::string &path) const {
   std::ofstream out(path);
+  out << "pid=" << pid << "\n";
 
-  for (const auto &sample : tid_samples_map.at(pid)) {
+  auto it = tid_samples_map.find(pid);
+  assert(it != tid_samples_map.end() && "main thread must have samples");
+  for (const auto &sample : it->second) {
     out << "tid=" << pid << "\n";
     for (const auto &frame : sample.frames) {
       out << frame.name << "\n";
@@ -17,6 +20,9 @@ void Profile::write(const std::string &path) const {
   }
 
   for (const auto &[tid, samples] : tid_samples_map) {
+    if (tid == pid) {
+      continue;
+    }
     for (const auto &sample : samples) {
       out << "tid=" << tid << "\n";
       for (const auto &frame : sample.frames) {
@@ -28,44 +34,38 @@ void Profile::write(const std::string &path) const {
 }
 
 Profile Profile::read(const std::string &path) {
-  // Profile profile;
   std::ifstream in(path);
-  // Sample current;
   std::string line;
+
+  assert(std::getline(in, line) && "Bad format: empty file");
+  assert(line.substr(0, 4) == "pid=" && "Bad format: expected pid= header");
+  pid_t pid = std::stoi(line.substr(4));
+
   bool beginning_of_sample = true;
-  bool first_sample = true;
-  pid_t pid;
-  pid_t tid;
+  pid_t tid = 0;
   std::unordered_map<pid_t, Samples> tid_samples_map;
+
   while (std::getline(in, line)) {
     if (beginning_of_sample) {
-      assert(line.substr(0, 4) == "tid=" && "Bad format!");
-      int value = std::stoi(line.substr(4, line.size()));
-      if (first_sample) {
-        pid = value;
-        tid = pid;
-      } else {
-        tid = value;
-      }
+      assert(line.substr(0, 4) == "tid=" && "Bad format: expected tid= header");
+      tid = std::stoi(line.substr(4));
       tid_samples_map[tid].push_back(Sample(tid, {}));
       beginning_of_sample = false;
-      first_sample = false;
     } else if (line.empty()) {
       beginning_of_sample = true;
-      // if (!current.frames.empty()) {
-      //   profile.samples.push_back(std::move(current));
-      //   current = {};
-      // }
     } else {
-      // current.frames.push_back({0, line});
       tid_samples_map[tid].back().frames.push_back({0, line});
     }
   }
-  // Handle last sample if file doesn't end with a blank line
-  // if (!current.frames.empty()) {
-  //   profile.samples.push_back(std::move(current));
-  // }
+
   Profile profile(pid);
-  profile.tid_samples_map = tid_samples_map;
+  profile.tid_samples_map = std::move(tid_samples_map);
   return profile;
+}
+
+void RecordingProfile::sample(pid_t tid, CallStack frames) {
+  for (auto &frame : frames) {
+    frame.name = symbol_table.lookup_symbol(frame.address).name;
+  }
+  profile.tid_samples_map[tid].emplace_back(tid, std::move(frames));
 }

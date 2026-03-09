@@ -1,7 +1,6 @@
 #include "record.hpp"
 #include "config.hpp"
 #include "profile.hpp"
-#include "symbols.hpp"
 #include "utils.hpp"
 #include <asm/ptrace.h>
 #include <cerrno>
@@ -72,7 +71,7 @@ int fork_exec(const RecordConfig &config) {
   int status;
   waitpid(pid, &status, 0);
 
-  Profile profile(pid);
+  RecordingProfile profile(pid);
 
   while (true) {
     ptrace(PTRACE_CONT, pid, 0, 0);
@@ -101,7 +100,7 @@ int fork_exec(const RecordConfig &config) {
     print_rusage(child_stats);
   }
 
-  std::cout << "Recorded " << profile.total_samples << " sample(s)\n";
+  std::cout << "Recorded " << profile.sample_count() << " sample(s)\n";
 
   profile.write(config.output_path);
 

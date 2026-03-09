@@ -35,39 +35,28 @@ using Samples = std::vector<Sample>;
 struct Profile {
   pid_t pid;
   std::unordered_map<pid_t, Samples> tid_samples_map;
-  SymbolTable symbol_table;
-  size_t total_samples;
 
-  Profile(pid_t pid) : pid(pid), symbol_table(pid), total_samples(0) {}
+  Profile(pid_t pid) : pid(pid) {}
+
+  size_t sample_count() const {
+    size_t count = 0;
+    for (const auto &[tid, samples] : tid_samples_map) {
+      count += samples.size();
+    }
+    return count;
+  }
 
   void write(const std::string &path) const;
   static Profile read(const std::string &path);
+};
 
-  void sample(pid_t tid, CallStack frames) {
-    ++total_samples;
-    for (auto &frame : frames) {
-      frame.name = symbol_table.lookup_symbol(frame.address).name;
-    }
-    tid_samples_map[tid].emplace_back(tid, std::move(frames));
-  }
+struct RecordingProfile {
+  Profile profile;
+  SymbolTable symbol_table;
 
-  void print() const {
-    int index = 0;
-    std::cout << "PID: " << pid << "\n";
-    for (const auto &sample : tid_samples_map.at(pid)) {
-      std::cout << "Sample " << index++ << ":\n";
-      sample.print();
-    }
-    std::cout << "============================================================="
-                 "===================\n\n";
+  RecordingProfile(pid_t pid) : profile(pid), symbol_table(pid) {}
 
-    for (const auto &[tid, samples] : tid_samples_map) {
-      index = 0;
-      std::cout << "TID: " << tid << "\n";
-      for (const auto &sample : samples) {
-        std::cout << "Sample " << index++ << ":\n";
-        sample.print();
-      }
-    }
-  }
+  void sample(pid_t tid, CallStack frames);
+  void write(const std::string &path) const { profile.write(path); }
+  size_t sample_count() const { return profile.sample_count(); }
 };
