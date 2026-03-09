@@ -49,3 +49,5 @@ public:
 timespec subtract(timespec start_time, timespec end_time);
 void print_rusage(const struct rusage &ru);
 void wait_n_msec(int n);
+
+std::vector<pid_t> discover_tids(pid_t pid);

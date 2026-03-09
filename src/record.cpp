@@ -7,8 +7,10 @@
 #include <elf.h>
 #include <iostream>
 #include <signal.h>
+#include <string>
 #include <sys/ptrace.h>
 #include <sys/resource.h>
+#include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -18,11 +20,11 @@
 constexpr uint64_t FRAME_POINTER_REGISTER = 29;
 constexpr uint64_t LINK_REGISTER = 30;
 
-CallStack record_frames(pid_t pid) {
+CallStack record_frames(pid_t tid) {
   CallStack frames;
   user_pt_regs regs;
   iovec iov = {&regs, sizeof(regs)};
-  ptrace(PTRACE_GETREGSET, pid, (void *)NT_PRSTATUS, &iov);
+  ptrace(PTRACE_GETREGSET, tid, (void *)NT_PRSTATUS, &iov);
   frames.push_back({regs.pc});
   uint64_t return_address = regs.regs[LINK_REGISTER];
   auto frame_pointer = regs.regs[FRAME_POINTER_REGISTER];
@@ -33,12 +35,12 @@ CallStack record_frames(pid_t pid) {
     frames.push_back({return_address - 4});
     errno = 0;
     return_address =
-        ptrace(PTRACE_PEEKDATA, pid, (void *)(frame_pointer + 8), 0);
+        ptrace(PTRACE_PEEKDATA, tid, (void *)(frame_pointer + 8), 0);
     if (errno)
       break;
     errno = 0;
     uint64_t prev_frame_pointer =
-        ptrace(PTRACE_PEEKDATA, pid, (void *)frame_pointer, 0);
+        ptrace(PTRACE_PEEKDATA, tid, (void *)frame_pointer, 0);
     if (errno)
       break;
     frame_pointer = prev_frame_pointer;
@@ -70,21 +72,39 @@ int fork_exec(const RecordConfig &config) {
 
   int status;
   waitpid(pid, &status, 0);
+  ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACECLONE);
 
   RecordingProfile profile(pid);
 
+  std::vector<pid_t> tids{pid};
+
   while (true) {
-    ptrace(PTRACE_CONT, pid, 0, 0);
+    for (const auto &tid : tids) {
+      ptrace(PTRACE_CONT, tid, 0, 0);
+    }
     wait_n_msec(config.interval_ms);
     if (kill(pid, SIGSTOP) < 0) {
       break;
     }
-    waitpid(pid, &status, 0);
-    if (WIFEXITED(status)) {
-      break;
-    } else if (WIFSTOPPED(status)) {
-      profile.sample(pid, record_frames(pid));
-    } else {
+
+    // Discover all TIDs
+    tids = discover_tids(pid);
+    bool process_exited = false;
+    for (const auto &tid : tids) {
+      if (waitpid(tid, &status, 0) < 0) {
+        continue;
+      }
+      if (WIFEXITED(status) || WIFSIGNALED(status)) {
+        if (tid == pid) {
+          process_exited = true;
+          break;
+        }
+        continue;
+      } else if (WIFSTOPPED(status)) {
+        profile.sample(tid, record_frames(tid));
+      }
+    }
+    if (process_exited) {
       break;
     }
   }

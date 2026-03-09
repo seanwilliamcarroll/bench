@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include <filesystem>
 #include <iostream>
 #include <time.h>
 
@@ -28,4 +29,15 @@ void print_rusage(const struct rusage &ru) {
 void wait_n_msec(int n) {
   timespec interval = {0, 1'000'000 * n};
   nanosleep(&interval, nullptr);
+}
+
+std::vector<pid_t> discover_tids(pid_t pid) {
+  std::vector<pid_t> output;
+
+  const std::string task_path = "/proc/" + std::to_string(pid) + "/task";
+  for (const auto &entry : std::filesystem::directory_iterator(task_path)) {
+    output.push_back(std::stoi(entry.path().filename()));
+  }
+
+  return output;
 }
