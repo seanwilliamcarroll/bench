@@ -45,3 +45,4 @@ Requires: Linux, AArch64, CMake 3.20+, a C++20 compiler.
 - **Flame graph output** — emit folded stack format for use with tools like speedscope or flamegraph.pl
 - **C++ demangling** — run symbol names through `__cxa_demangle` for readable C++ output
 - **Multi-thread support** — currently only traces the main thread
+- **Skip `PTRACE_EVENT_CLONE` samples** — when a new thread spawns under `PTRACE_O_TRACECLONE`, it stops at its spawn point; detect this event and skip sampling that round to avoid noise
