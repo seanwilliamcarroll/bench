@@ -4,6 +4,8 @@
 #include "utils.hpp"
 #include <asm/ptrace.h>
 #include <cerrno>
+#include <csignal>
+#include <cstdlib>
 #include <elf.h>
 #include <iostream>
 #include <signal.h>
@@ -67,7 +69,7 @@ int fork_exec(const RecordConfig &config) {
     return -1;
   }
   if (pid == 0) {
-    ptrace(PTRACE_TRACEME, 0, 0, 0);
+    raise(SIGSTOP);
     return execvp(argv[0], argv.data());
   }
 
@@ -75,8 +77,8 @@ int fork_exec(const RecordConfig &config) {
   signal(SIGINT, handle_sigint);
 
   int status;
+  ptrace(PTRACE_SEIZE, pid, 0, PTRACE_O_TRACECLONE);
   waitpid(pid, &status, 0);
-  ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACECLONE);
 
   RecordingProfile profile(pid);
 
@@ -91,26 +93,41 @@ int fork_exec(const RecordConfig &config) {
       kill(pid, SIGKILL);
       break;
     }
-    if (kill(pid, SIGSTOP) < 0) {
-      break;
+    for (const auto &tid : tids) {
+      ptrace(PTRACE_INTERRUPT, tid, 0, 0);
     }
 
-    // Discover all TIDs
-    tids = discover_tids(pid);
+    auto expected_tids = discover_tids(pid);
+
+    tids.clear();
     bool process_exited = false;
-    for (const auto &tid : tids) {
-      if (waitpid(tid, &status, 0) < 0) {
-        continue;
+
+    while (!expected_tids.empty()) {
+      auto tid = waitpid(-1, &status, 0);
+      if (tid <= 0) {
+        // Error of some kind?
+        break;
       }
-      if (WIFEXITED(status) || WIFSIGNALED(status)) {
-        if (tid == pid) {
-          process_exited = true;
-          break;
+      auto it = expected_tids.find(tid);
+      if (it == expected_tids.end()) {
+        if (WIFSTOPPED(status)) {
+          ptrace(PTRACE_CONT, tid, 0, 0);
+          tids.push_back(tid);
         }
         continue;
+      }
+      if (WIFSTOPPED(status) &&
+          (status >> 8) == (SIGTRAP | PTRACE_EVENT_CLONE << 8)) {
+        ptrace(PTRACE_CONT, tid, 0, 0);
+        continue;
+      } else if ((WIFEXITED(status) || WIFSIGNALED(status)) && tid == pid) {
+        process_exited = true;
+        break;
       } else if (WIFSTOPPED(status)) {
         profile.sample(tid, record_frames(tid));
+        tids.push_back(tid);
       }
+      expected_tids.erase(it);
     }
     if (process_exited) {
       break;

@@ -1,7 +1,9 @@
 #include "utils.hpp"
 #include <filesystem>
 #include <iostream>
+#include <sys/types.h>
 #include <time.h>
+#include <unordered_set>
 
 timespec subtract(timespec start_time, timespec end_time) {
   timespec output;
@@ -26,17 +28,19 @@ void print_rusage(const struct rusage &ru) {
   std::cout << "involuntary context switches: " << ru.ru_nivcsw << "\n";
 }
 
-void wait_n_msec(int n) {
-  timespec interval = {0, 1'000'000 * n};
+void wait_n_usec(int n) {
+  timespec interval = {0, 1'000 * n};
   nanosleep(&interval, nullptr);
 }
 
-std::vector<pid_t> discover_tids(pid_t pid) {
-  std::vector<pid_t> output;
+void wait_n_msec(int n) { wait_n_usec(n * 1'000); }
+
+std::unordered_set<pid_t> discover_tids(pid_t pid) {
+  std::unordered_set<pid_t> output;
 
   const std::string task_path = "/proc/" + std::to_string(pid) + "/task";
   for (const auto &entry : std::filesystem::directory_iterator(task_path)) {
-    output.push_back(std::stoi(entry.path().filename()));
+    output.insert(std::stoi(entry.path().filename()));
   }
 
   return output;
