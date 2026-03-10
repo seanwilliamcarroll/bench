@@ -25,10 +25,10 @@ bench report -i prof.out
 
 ## How it works
 
-1. Forks the target process with `PTRACE_TRACEME`
-2. Periodically sends `SIGSTOP`, walks the frame pointer chain to collect a call stack
+1. Forks and attaches to the target process with `PTRACE_SEIZE`
+2. Periodically interrupts all threads via `PTRACE_INTERRUPT`, walks the frame pointer chain to collect call stacks
 3. Resolves symbol names from `SHT_SYMTAB`/`SHT_DYNSYM` sections in mapped ELF files
-4. Writes samples to a text file; `report` aggregates top-of-stack frequency
+4. Writes samples to a text file; `report` aggregates top-of-stack frequency per thread
 
 ## Building
 
@@ -44,5 +44,3 @@ Requires: Linux, AArch64, CMake 3.20+, a C++20 compiler.
 - **Inclusive counting** — count a function whenever it appears anywhere in the stack, not just at the top
 - **Flame graph output** — emit folded stack format for use with tools like speedscope or flamegraph.pl
 - **C++ demangling** — run symbol names through `__cxa_demangle` for readable C++ output
-- **Multi-thread support** — currently only traces the main thread
-- **Skip `PTRACE_EVENT_CLONE` samples** — when a new thread spawns under `PTRACE_O_TRACECLONE`, it stops at its spawn point; detect this event and skip sampling that round to avoid noise
