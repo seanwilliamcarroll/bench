@@ -1,5 +1,6 @@
 #include "symbols.hpp"
 #include <cstdint>
+#include <cxxabi.h>
 #include <elf.h>
 #include <fcntl.h>
 #include <fstream>
@@ -7,6 +8,7 @@
 #include <istream>
 #include <sched.h>
 #include <sstream>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -66,6 +68,17 @@ std::vector<MappedRegion> read_maps(pid_t pid) {
   return output;
 }
 
+std::string cpp_demangle(const char *input) {
+  int status;
+  char *demangled_name = abi::__cxa_demangle(input, nullptr, nullptr, &status);
+  if (status != 0) {
+    return std::string(input);
+  }
+  std::string output(demangled_name);
+  free(demangled_name);
+  return output;
+}
+
 std::vector<Symbol> MappedRegion::load_symbols() {
   int file_descriptor = open(path.c_str(), O_RDONLY);
   struct stat buf;
@@ -113,9 +126,11 @@ std::vector<Symbol> MappedRegion::load_symbols() {
     uint64_t function_end_addr =
         function_start_addr + symbols[symbol_index].st_size;
     uint64_t possible_load_bias = elf_header->e_type == ET_DYN ? load_bias : 0;
+    const char *original_name = string_table + symbols[symbol_index].st_name;
+    const auto demangled_name = cpp_demangle(original_name);
     output.push_back({.start = function_start_addr + possible_load_bias,
                       .size = symbols[symbol_index].st_size,
-                      .name = (string_table + symbols[symbol_index].st_name)});
+                      .name = demangled_name});
   }
 
   munmap(base_addr, file_size);
