@@ -41,4 +41,3 @@ Requires: Linux, AArch64, CMake 3.20+, a C++20 compiler.
 ## Possible improvements
 
 - **PLT symbol synthesis** — read `.rela.plt` to label PLT stubs (e.g. `sqrt@plt`) instead of leaving them unresolved
-- **Flame graph output** — emit folded stack format for use with tools like speedscope or flamegraph.pl

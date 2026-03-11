@@ -15,4 +15,4 @@ add_executable(bench
     src/symbols.cpp
 )
 
-target_compile_options(bench PRIVATE -Wall -Wextra)
+target_compile_options(bench PRIVATE -Wall -Wextra -Werror)
