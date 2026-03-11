@@ -30,14 +30,14 @@ CallStack record_frames(pid_t tid) {
   user_pt_regs regs;
   iovec iov = {&regs, sizeof(regs)};
   ptrace(PTRACE_GETREGSET, tid, (void *)NT_PRSTATUS, &iov);
-  frames.push_back({regs.pc});
+  frames.push_back({.address = regs.pc, .name = ""});
   uint64_t return_address = regs.regs[LINK_REGISTER];
   auto frame_pointer = regs.regs[FRAME_POINTER_REGISTER];
   auto is_valid_address = [](uint64_t address) {
     return address != 0 && address < 0x0001000000000000ULL;
   };
   while (is_valid_address(frame_pointer) && is_valid_address(return_address)) {
-    frames.push_back({return_address - 4});
+    frames.push_back({.address = return_address - 4, .name = ""});
     errno = 0;
     return_address =
         ptrace(PTRACE_PEEKDATA, tid, (void *)(frame_pointer + 8), 0);

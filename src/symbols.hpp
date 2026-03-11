@@ -34,6 +34,10 @@ struct MappedRegion {
   std::string path;
   RangeMap<uint64_t, Symbol> cached_symbols;
 
+  MappedRegion(uint64_t start, uint64_t end, uint64_t load_bias,
+               std::string path)
+      : start(start), end(end), load_bias(load_bias), path(std::move(path)) {}
+
   void print() const {
     std::cout << "[0x" << std::hex << start << ", 0x" << end << "]"
               << " bias=0x" << load_bias << " " << path << std::dec << "\n";

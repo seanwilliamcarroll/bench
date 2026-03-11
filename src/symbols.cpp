@@ -57,12 +57,8 @@ std::vector<MappedRegion> read_maps(pid_t pid) {
       continue;
     }
 
-    // std::cout << "Valid: ";
-    output.push_back({.start = start,
-                      .end = end,
-                      .load_bias = (start - offset),
-                      .path = path});
-    // output.back().print();
+    output.push_back(
+        MappedRegion(start, end, (start - offset), std::move(path)));
   }
 
   return output;
@@ -123,8 +119,6 @@ std::vector<Symbol> MappedRegion::load_symbols() {
       continue;
     }
     uint64_t function_start_addr = symbols[symbol_index].st_value;
-    uint64_t function_end_addr =
-        function_start_addr + symbols[symbol_index].st_size;
     uint64_t possible_load_bias = elf_header->e_type == ET_DYN ? load_bias : 0;
     const char *original_name = string_table + symbols[symbol_index].st_name;
     const auto demangled_name = cpp_demangle(original_name);
