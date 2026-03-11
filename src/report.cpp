@@ -126,14 +126,13 @@ int cmd_report(int argc, char *argv[]) {
     return 1;
   }
 
-  if (config.format == ReportFormat::flat) {
+  switch (config.format) {
+  case ReportFormat::flat:
     flat_report(profile);
-  } else if (config.format == ReportFormat::folded) {
+    break;
+  case ReportFormat::folded:
     folded_report(profile);
-  } else {
-    std::cerr << "Unknown ReportFormat::" << static_cast<int>(config.format)
-              << "\n";
-    return 1;
+    break;
   }
 
   return 0;
