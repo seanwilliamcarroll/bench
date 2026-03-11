@@ -28,7 +28,7 @@ bench report -i prof.out
 1. Forks and attaches to the target process with `PTRACE_SEIZE`
 2. Periodically interrupts all threads via `PTRACE_INTERRUPT`, walks the frame pointer chain to collect call stacks
 3. Resolves and demangles symbol names from `SHT_SYMTAB`/`SHT_DYNSYM` sections in mapped ELF files
-4. Writes samples to a text file; `report` aggregates top-of-stack frequency per thread
+4. Writes samples to a text file; `report` aggregates exclusive and inclusive frequency per thread
 
 ## Building
 
@@ -41,5 +41,4 @@ Requires: Linux, AArch64, CMake 3.20+, a C++20 compiler.
 ## Possible improvements
 
 - **PLT symbol synthesis** — read `.rela.plt` to label PLT stubs (e.g. `sqrt@plt`) instead of leaving them unresolved
-- **Inclusive counting** — count a function whenever it appears anywhere in the stack, not just at the top
 - **Flame graph output** — emit folded stack format for use with tools like speedscope or flamegraph.pl
