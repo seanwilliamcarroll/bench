@@ -32,13 +32,23 @@ RecordConfig parse_record_args(int argc, char *argv[]) {
 ReportConfig parse_report_args(int argc, char *argv[]) {
   ReportConfig config;
   int opt;
-  while ((opt = getopt(argc, argv, "i:")) != -1) {
+  while ((opt = getopt(argc, argv, "i:f:")) != -1) {
     switch (opt) {
     case 'i':
       config.input_path = optarg;
       break;
+    case 'f':
+      if (std::string(optarg) == "folded") {
+        config.format = ReportFormat::folded;
+      } else if (std::string(optarg) == "flat") {
+        config.format = ReportFormat::flat;
+      } else {
+        std::cerr << "Unknown format: " << optarg << " (flat, folded)\n";
+        std::exit(1);
+      }
+      break;
     default:
-      std::cerr << "Usage: bench report [-i input]\n";
+      std::cerr << "Usage: bench report [-i input] [-f flat|folded]\n";
       std::exit(1);
     }
   }

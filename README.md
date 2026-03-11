@@ -13,7 +13,7 @@ Built as a learning project while running Linux on AArch64 inside a UTM/QEMU VM 
 bench record [-o output] [-r interval_ms] <command>
 
 # Report results
-bench report [-i input]
+bench report [-i input] [-f flat|folded]
 ```
 
 **Examples:**

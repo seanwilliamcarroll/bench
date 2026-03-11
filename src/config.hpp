@@ -8,8 +8,14 @@ struct RecordConfig {
   std::vector<std::string> command;
 };
 
+enum class ReportFormat {
+  flat,
+  folded,
+};
+
 struct ReportConfig {
   std::string input_path = "bench.out";
+  ReportFormat format = ReportFormat::flat;
 };
 
 RecordConfig parse_record_args(int argc, char *argv[]);
