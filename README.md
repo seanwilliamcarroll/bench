@@ -41,3 +41,7 @@ Requires: Linux, AArch64, CMake 3.20+, a C++20 compiler.
 ## Possible improvements
 
 - **PLT symbol synthesis** — read `.rela.plt` to label PLT stubs (e.g. `sqrt@plt`) instead of leaving them unresolved
+- **Thread names** — read `/proc/pid/task/tid/comm` to show thread names alongside TIDs in the report
+- **Attach to existing process** — `-p pid` mode to attach to an already-running process instead of launching the target
+- **Output to file** — `-o` flag on `bench report` to write output to a file instead of stdout
+- **DWARF unwinding** — handle targets compiled without `-fno-omit-frame-pointer` using `.eh_frame` data
