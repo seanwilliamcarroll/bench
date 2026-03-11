@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 int cmd_report(int argc, char *argv[]) {
@@ -38,14 +39,25 @@ int cmd_report(int argc, char *argv[]) {
     }
     std::cout << " [" << samples.size() << " samples] ---\n";
 
-    std::unordered_map<std::string, int> counts;
+    std::unordered_map<std::string, int> exclusive_counts;
+    std::unordered_map<std::string, int> inclusive_counts;
+    std::unordered_set<std::string> already_seen;
     for (const auto &sample : samples) {
       if (!sample.frames.empty()) {
-        counts[sample.frames[0].name]++;
+        exclusive_counts[sample.frames[0].name]++;
+      }
+      already_seen.clear();
+      for (const auto &frame : sample.frames) {
+        if (already_seen.count(frame.name) > 0) {
+          continue;
+        }
+        inclusive_counts[frame.name]++;
+        already_seen.insert(frame.name);
       }
     }
 
-    std::vector<std::pair<std::string, int>> sorted(counts.begin(), counts.end());
+    std::vector<std::pair<std::string, int>> sorted(exclusive_counts.begin(),
+                                                    exclusive_counts.end());
     std::sort(sorted.begin(), sorted.end(),
               [](const auto &a, const auto &b) { return a.second > b.second; });
 
