@@ -23,7 +23,7 @@ std::vector<pid_t> get_thread_order(const Profile &profile) {
   return thread_order;
 }
 
-void flat_report(const ReportConfig &config, const Profile &profile) {
+void flat_report(const Profile &profile) {
   const auto thread_order = get_thread_order(profile);
 
   for (const auto &tid : thread_order) {
@@ -86,7 +86,7 @@ void flat_report(const ReportConfig &config, const Profile &profile) {
 }
 
 std::string folded_frame_name(pid_t tid, const Sample &sample) {
-  std::string output = std::to_string(tid);
+  std::string output = "tid=" + std::to_string(tid);
 
   for (const auto &frame : sample.frames | std::views::reverse) {
     output += ";" + frame.name;
@@ -95,7 +95,7 @@ std::string folded_frame_name(pid_t tid, const Sample &sample) {
   return output;
 }
 
-void folded_report(const ReportConfig &config, const Profile &profile) {
+void folded_report(const Profile &profile) {
   const auto thread_order = get_thread_order(profile);
 
   for (const auto &tid : thread_order) {
@@ -111,11 +111,7 @@ void folded_report(const ReportConfig &config, const Profile &profile) {
       unique_frame_counts[folded_frame_name(tid, sample)]++;
     }
 
-    std::vector<std::pair<std::string, int>> sorted(unique_frame_counts.begin(),
-                                                    unique_frame_counts.end());
-    std::sort(sorted.begin(), sorted.end(),
-              [](const auto &a, const auto &b) { return a.second > b.second; });
-    for (const auto &[unique_frame_name, count] : sorted) {
+    for (const auto &[unique_frame_name, count] : unique_frame_counts) {
       std::cout << unique_frame_name << " " << count << "\n";
     }
   }
@@ -131,9 +127,9 @@ int cmd_report(int argc, char *argv[]) {
   }
 
   if (config.format == ReportFormat::flat) {
-    flat_report(config, profile);
+    flat_report(profile);
   } else if (config.format == ReportFormat::folded) {
-    folded_report(config, profile);
+    folded_report(profile);
   } else {
     std::cerr << "Unknown ReportFormat::" << static_cast<int>(config.format)
               << "\n";
