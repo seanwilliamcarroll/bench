@@ -62,10 +62,27 @@ int cmd_report(int argc, char *argv[]) {
               [](const auto &a, const auto &b) { return a.second > b.second; });
 
     int total = samples.size();
-    for (const auto &[name, count] : sorted) {
-      double pct = 100.0 * count / total;
-      std::cout << std::setw(6) << std::fixed << std::setprecision(1) << pct
-                << "%  " << count << "\t" << name << "\n";
+    std::cout << std::fixed << std::setprecision(1);
+    std::cout << std::setw(7) << "excl%"
+              << "  " << std::setw(4) << "excl"
+              << "    "
+              << std::setw(7) << "incl%"
+              << "  " << std::setw(4) << "incl"
+              << "  name\n";
+    for (const auto &[name, excl] : sorted) {
+      int incl = 0;
+      auto it = inclusive_counts.find(name);
+      if (it != inclusive_counts.end()) {
+        incl = it->second;
+      }
+      double excl_pct = 100.0 * excl / total;
+      double incl_pct = 100.0 * incl / total;
+      std::cout << std::setw(6) << excl_pct << "%"
+                << "  " << std::setw(4) << excl
+                << "    "
+                << std::setw(6) << incl_pct << "%"
+                << "  " << std::setw(4) << incl
+                << "  " << name << "\n";
     }
     std::cout << "\n";
   }
