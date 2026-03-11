@@ -105,8 +105,12 @@ Per-thread call frequency with exclusive and inclusive counts. Folded output wor
 
 ## What I took away
 
+I've followed plenty of tutorials and walkthroughs before — I have [a raytracer](https://github.com/seanwilliamcarroll/rt), [a programming language](https://github.com/seanwilliamcarroll/pl), [an LLM](https://github.com/seanwilliamcarroll/llm) on my GitHub, all at least partially built by following guides. They're fine, but they have a specific problem: you're doing what the guide says to do. It explains why, but you can't ask follow-up questions. You can Google around, maybe find a Reddit post or a Stack Overflow answer, but it's hit or miss. And it makes you reluctant to deviate — if you change something at step A because you'd prefer it a different way, you might break things by step D and the guide becomes useless.
+
+With Claude, I got an interactive walkthrough. I could ask "why this and not that?" and get an answer in the context of my code, not someone else's example. I could make decisions I preferred — like writing my own `RangeMap` instead of pulling in a library — and still have a knowledgeable second opinion available when those decisions had consequences.
+
 I wouldn't call myself an expert on ptrace or ELF internals now, but I'm a lot less afraid of them. Building something real — not a hello world — with these APIs was a good way to get my feet wet. And understanding how a profiler works under the hood has already changed how I think about profiling results.
 
-Working with Claude felt like having a tutor who's read all the man pages and can explain them in context. The explanation gave me a running start; writing the code myself made it stick. If I'd asked Claude to write the whole thing, I'd have a working profiler and no idea how it works. If I'd done it entirely alone, I'd have spent a lot more time sifting through documentation for concepts I could absorb in minutes with a good explanation.
+In the future, I'd probably point Claude at a tutorial or guide I'm interested in and use it as a tutor for that topic. Not to replace the guide, but to have someone — something? — available when I want to dig into something the guide glosses over, or when I want to go off-script. It's not a perfect teacher. But it's a teacher that has broad general knowledge, can go look things up, and can distill what it finds into something useful for where I am right now.
 
 I don't write blog posts. This is an experiment too. But if you're considering using an LLM for a learning project, I'd recommend this approach: let it teach you, let it handle the boring parts, and write the interesting code yourself.
