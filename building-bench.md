@@ -114,3 +114,7 @@ I wouldn't call myself an expert on ptrace or ELF internals now, but I'm a lot l
 In the future, I'd probably point Claude at a tutorial or guide I'm interested in and use it as a tutor for that topic. Not to replace the guide, but to have someone — something? — available when I want to dig into something the guide glosses over, or when I want to go off-script. It's not a perfect teacher. But it's a teacher that has broad general knowledge, can go look things up, and can distill what it finds into something useful for where I am right now.
 
 I don't write blog posts. This is an experiment too. But if you're considering using an LLM for a learning project, I'd recommend this approach: let it teach you, let it handle the boring parts, and write the interesting code yourself.
+
+---
+
+*P.S. — Claude wrote this post too. I fed Sonnet the git commit history and some direction, and it produced a first draft. Then I switched to Opus and iterated on tone, structure, and getting my actual experience into it rather than a generic technical summary. I suffer from the blank page problem — I'm a much better editor than I am a first-draft writer. Claude doesn't have that problem. Having it produce something definitive that I can accept, reject, or reshape is a good way to get moving. Even the writing process ended up being a version of the same workflow.*
