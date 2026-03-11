@@ -55,11 +55,7 @@ The parts I didn't want to spend time on:
 - Test programs — two C programs and a C++20 producer-consumer pipeline
 - README drafts, clang-format config, pre-commit hook
 
-These aren't unimportant — you need them — but they're not the reason I built this project. Having Claude handle them meant I stayed focused on the interesting parts.
-
-### For the tedious finishing work
-
-Once the core was working, there was a pile of work that was correct but mechanical: column-aligned output formatting, switching an if-else chain to a `switch` with `-Wswitch` coverage, updating the README after each feature, getting `.gitignore` right. Claude handled most of that. I reviewed and committed it.
+These aren't unimportant — you need them — but they're not the reason I built this project. Having Claude handle them meant I stayed focused on the interesting parts. Once the core was working, it also handled the mechanical finishing work: column-aligned output formatting, switching an if-else chain to a `switch` with `-Wswitch` coverage, updating the README after each feature. I reviewed and committed it.
 
 ---
 
